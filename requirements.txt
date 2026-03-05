@@ -1,0 +1,6 @@
+streamlit
+pandas
+numpy
+plotly
+great_tables
+pydeck
