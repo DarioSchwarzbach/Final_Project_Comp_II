@@ -116,7 +116,7 @@ def main():
     
     col1, col2 = st.columns([2, 1])
     with col1:
-        st.plotly_chart(plot_seasonal_trends(seasonal_df), use_container_width=True)
+        st.plotly_chart(plot_seasonal_trends(seasonal_df), width="stretch")
     
     with col2:
         st.markdown("### Summary Statistics")
