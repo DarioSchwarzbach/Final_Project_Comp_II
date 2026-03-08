@@ -1,0 +1,32 @@
+name: Generate and Upload CSV
+
+on:
+  workflow_dispatch: # Allows you to run this manually from the UI
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip' # Optional: speeds up subsequent runs
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install polars nflreadpy os  # Add any other libs your script needs
+
+      - name: Run script
+        run: python data_acquisition/fetch_nfl.py # Replace with your filename
+
+      - name: Upload CSV Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bears_games_csv
+          path: data_acquisition/data/bears_games_*.csv # Replace with the filename your script creates
