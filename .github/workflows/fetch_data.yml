@@ -30,4 +30,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bears_games_csv
-          path: data_acquisition/data/bears_games_*.csv
+          path: data_acquisition/data/*.csv
