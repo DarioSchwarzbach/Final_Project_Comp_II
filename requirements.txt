@@ -1,6 +1,9 @@
 streamlit
 pandas
 numpy
+scipy
 plotly
-great_tables
 pydeck
+requests
+polars
+nflreadpy
