@@ -1,93 +1,66 @@
-# Final_Project_Comp_II
-[![Fetch NFL and Crime Data](https://github.com/DarioSchwarzbach/Final_Project_Comp_II/actions/workflows/fetch_data.yml/badge.svg?branch=dev)](https://github.com/DarioSchwarzbach/Final_Project_Comp_II/actions/workflows/fetch_data.yml)
+# Chicago Bears Game Day Crime Explorer
 
+## Project Overview:
+This project provides a comprehensive analysis and interactive dashboard to explore the impact of Chicago Bears game days on crime rates in Chicago. The application uses a Python model to compare crime volumes on game days against historical baselines, visualizing data through density heatmaps, line charts, and statistical paired t-tests (macro trends). The ultimate goal is to provide an analytical tool for discovering whether crime significantly increases or decreases around Soldier Field and the broader Chicago area during Bears games.
 
-## Getting started
+## Motivation for the Research Problem:
+Large-scale sporting events inherently alter the normal flow of a city, drawing massive crowds, increasing traffic, and concentrating economic activity around stadium venues. A critical question for municipal leaders, law enforcement, and urban planners is whether these events—specifically Chicago Bears home and away games—have a statistically significant impact on crime rates. By analyzing crime volumes during game windows against historical baselines, this tool aims to provide actionable intelligence for resource allocation, public safety planning, and understanding the broader sociological impact of NFL games on the city of Chicago.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Summary of the Overall Approach:
+The project adopts a data-driven approach leveraging three distinct methods of analysis to evaluate the correlation between Chicago Bears game days and civic safety:
+1. **General Correlation (Seasonal Trends)**: Analyzing long-term trends by plotting the Bears' year-over-year win/loss record against the total volume of violent crimes in Chicago. This macro view attempts to identify if broader team success (or failure) correlates with the city's overall violent crime rate across an entire season.
+2. **Game Day vs. Baseline (Temporal Analysis)**: Utilizing a specialized data pipeline (`fetch_data.py`), the project extracts a specific 9-hour temporal window (3 hours before kickoff to 6 hours after) for each game day. This is compared against the exact same 9-hour window on historical Sundays where no game was played, establishing a control baseline. A paired t-test determines if the variance in crime is statistically significant.
+3. **Spatial Crime Location (Density Mapping)**: Highlighting the localized spatial impact of crime. Using PyDeck heatmaps, the dashboard maps the exact locations of crimes occurring during the game window, focusing particularly on the density of incidents in proximity to Soldier Field and surrounding neighborhoods.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Key Findings, Results, and Recommendations:
+The analytical dashboard relies on rigorous statistical tests to draw conclusions from the localized and macro-level data. The mathematical outputs are intended to guide the following findings and recommendations:
+- **Z-Scores & P-Values (Single Game)**: By measuring the number of standard deviations (z-score) a game day's crime volume (Sunday with a game) is from the historical mean (Sunday baseline), the model calculates a p-value. A p-value < 0.05 indicates a statistically significant anomaly (either an increase or decrease in crime).
+- **Paired T-Test (Macro Trends)**: By evaluating the mean difference between game day crimes and baseline crimes across the entire dataset, the tool identifies definitive, overarching statistical trends.
+- **Recommendations for Stakeholders**:
+  - *If a significant increase is detected*: Law enforcement and city planners should consider dynamic resource allocation, increasing police presence, or optimizing traffic routes around the stadium and high-crime density zones identified in the spatial heatmap.
+  - *If a significant decrease or no change is detected*: Resources can be maintained at standard operational levels, avoiding unnecessary overtime expenditures for public safety officers. City officials can also use this data to alleviate public concerns regarding crime spikes during major sporting events.
 
-## Add your files
+## File Summary:
+- **`app.py`**: The main Streamlit dashboard application for exploring game day crime analytics, including the three main analytical methods (General Correlation, Single Game Analysis, and Macro Trends).
+- **`fetch_data.py`**: Python script used to fetch NFL schedules using `nflreadpy` and query the City of Chicago Data API for crime statistics correlated with game windows. Saves outputs to the `data/` directory.
+- **`app_years.py`**: An alternate version of the Streamlit application for analyzing crime trends across different years.
+- **`requirements.txt`**: Contains all the required Python packages to run the data fetching script and Streamlit dashboard.
+- **`.github/workflows/fetch_data.yml`**: GitHub Actions workflow to automate the fetching of new NFL and crime data.
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+## Dashboard Python Prerequisites:
+Before running the dashboard ensure you have Streamlit installed. You can install it using pip:
+```bash
+pip install streamlit
 ```
-cd existing_repo
-git remote add origin https://gitlab.nps.edu/dario.schwarzbach.gy/final_project_comp_ii.git
-git branch -M main
-git push -uf origin main
+
+## Python Packages:
+- **streamlit**: An open-source app framework for Machine Learning and Data Science teams.
+- **pandas**: A powerful data analysis and manipulation library.
+- **numpy**: A fundamental package for scientific computing with Python.
+- **scipy**: Used for statistical functions, specifically calculating z-scores, p-values, and t-tests.
+- **plotly**: A graphing library for making interactive, publication-quality graphs (used here for line charts, box plots, and dual-axis correlation charts).
+- **pydeck**: A WebGL-powered framework for visual exploratory data analysis of large datasets (used for the spatial crime density heatmaps).
+- **requests**: An HTTP library for making API calls to the City of Chicago data portal.
+- **polars**: A blazingly fast DataFrames library used here alongside pandas for data manipulation.
+- **nflreadpy**: A Python library to access NFL schedule and game data.
+- **great_tables**: A package for building wonderful display tables in Python.
+
+You can install all these packages using pip:
+```bash
+pip install -r requirements.txt
 ```
 
-## Integrate with your tools
+## Steps to run streamlit Dashboard:
+1. Open Command Prompt or Terminal.
+2. Navigate to the project directory where `app.py` is saved.
+3. Ensure you have the datasets downloaded by running the fetch script:
+   ```bash
+   python fetch_data.py
+   ```
+4. Run the following command to start the dashboard:
+   ```bash
+   python -m streamlit run app.py
+   ```
 
-* [Set up project integrations](https://gitlab.nps.edu/dario.schwarzbach.gy/final_project_comp_ii/-/settings/integrations)
-
-## Collaborate with your team
-
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Team Breakdown:
+- **Project Authors/Contributors**: responsible for developing the data acquisition script (`fetch_data.py`), the statistical data models and the Streamlit dashboard (`app.py`), and configuring the automated GitHub Actions workflow. *(Feel free to add specific team member names and roles here as seen in the template)*
