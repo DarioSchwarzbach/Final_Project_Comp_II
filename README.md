@@ -1,5 +1,5 @@
 # Final_Project_Comp_II
-
+[![Fetch NFL and Crime Data](https://github.com/DarioSchwarzbach/Final_Project_Comp_II/actions/workflows/fetch_data.yml/badge.svg?branch=dev)](https://github.com/DarioSchwarzbach/Final_Project_Comp_II/actions/workflows/fetch_data.yml)
 
 
 ## Getting started
