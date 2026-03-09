@@ -74,7 +74,3 @@ pip install -r requirements.txt
    ```bash
    python -m streamlit run app.py
    ```
-
-## Team Breakdown:
-
-- **Project Authors/Contributors**: responsible for developing the data acquisition script (`fetch_data.py`), the statistical data models and the Streamlit dashboard (`app.py`), and configuring the automated GitHub Actions workflow. *(Feel free to add specific team member names and roles here as seen in the template)*
