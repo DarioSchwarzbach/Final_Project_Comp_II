@@ -145,33 +145,41 @@ st.plotly_chart(fig, width="stretch")
 # --- 4. Heatmap ---
 st.subheader("Crime Density Heatmap")
 
-# Streamlit Layer Control Toggle
-show_history = st.checkbox("Show Historical Baseline (Other Years)", value=False)
+# 1. Get a sorted list of all available historical years
+historical_years = sorted(df_history['year'].unique().tolist())
+
+# 2. Use a multiselect widget for individual year toggling
+selected_years = st.multiselect(
+    "Select Historical Years to Overlay:",
+    options=historical_years,
+    default=[]  # Leave empty by default to prevent clutter
+)
 
 
-def create_heatmap(df_g, df_h, show_h):
+def create_heatmap(df_g, df_h, years_to_show):
     SOLDIER_FIELD_LAT = 41.8623
     SOLDIER_FIELD_LON = -87.6167
 
     layers = []
 
-    # Base Historical Layer (Optional)
-    if show_h:
-        # Convert to pure Python dictionaries to bypass NumPy/Pandas JSON errors
-        df_h_clean = df_h[['latitude', 'longitude']].dropna().to_dict(orient='records')
+    # 3. Create a separate layer for EACH selected historical year
+    for year in years_to_show:
+        df_year = df_h[df_h['year'] == year]
+        df_year_clean = df_year[['latitude', 'longitude']].dropna().to_dict(orient='records')
 
-        layers.append(pdk.Layer(
-            "HeatmapLayer",
-            data=df_h_clean,
-            get_position=["longitude", "latitude"],
-            get_weight=1,
-            radiusPixels=50,
-            opacity=0.3,
-            colorRange=[[237, 248, 251], [191, 211, 230], [158, 188, 218], [140, 150, 198], [136, 86, 167]]
-        ))
+        if df_year_clean:
+            layers.append(pdk.Layer(
+                "HeatmapLayer",
+                data=df_year_clean,
+                get_position=["longitude", "latitude"],
+                get_weight=1,
+                radiusPixels=50,
+                # opacity=0.3,  # Dimmer so it doesn't overpower the main game
+                colorRange=[[237, 248, 251], [191, 211, 230], [158, 188, 218], [140, 150, 198], [136, 86, 167]],
+                id=f"heatmap_historical_{year}"  # Unique ID for each year's layer
+            ))
 
     # Primary Game Day Layer
-    # Convert to pure Python dictionaries
     df_g_clean = df_g[['latitude', 'longitude']].dropna().to_dict(orient='records')
 
     layers.append(pdk.Layer(
@@ -181,10 +189,10 @@ def create_heatmap(df_g, df_h, show_h):
         get_weight=1,
         radiusPixels=50,
         opacity=0.8,
+        id="heatmap_gameday"
     ))
 
     # Soldier Field Marker
-    # Use a raw Python list of dicts instead of pd.DataFrame
     stadium_data = [{"lat": SOLDIER_FIELD_LAT, "lon": SOLDIER_FIELD_LON}]
 
     layers.append(pdk.Layer(
@@ -193,6 +201,7 @@ def create_heatmap(df_g, df_h, show_h):
         get_position=["lon", "lat"],
         get_color=[255, 100, 0, 200],
         get_radius=800,
+        id="stadium_marker"
     ))
 
     view_state = pdk.ViewState(
@@ -202,13 +211,13 @@ def create_heatmap(df_g, df_h, show_h):
         pitch=0,
     )
 
-    deck = pdk.Deck(
+    r = pdk.Deck(
         layers=layers,
         initial_view_state=view_state,
         tooltip={"text": "Crime Density"}
     )
-    return deck
+    return r
 
 
-# Render the pydeck chart with the toggle state passed in
-st.pydeck_chart(create_heatmap(df_game, df_history, show_history))
+# Render the pydeck chart passing the selected years
+st.pydeck_chart(create_heatmap(df_game, df_history, selected_years))

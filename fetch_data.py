@@ -90,9 +90,9 @@ def fetch_data():
                 # Skip invalid leap year dates
                 continue
 
-            # Add and subtract 3 hours
+            # We want a time window 3 hours before and 3 hours after a game with 3 hours avg game time.
             start_dt = target_dt - timedelta(hours=3)
-            end_dt = target_dt + timedelta(hours=3)
+            end_dt = target_dt + timedelta(hours=6)
 
             # Format to Socrata API standard
             start_str = start_dt.strftime("%Y-%m-%dT%H:%M:%S")
@@ -110,7 +110,7 @@ def fetch_data():
         offset = 0
         all_data = []
 
-        print(f"Fetching crimes for {gameday} (Window: {gametime} ± 3 hours across all years)...")
+        print(f"Fetching crimes for {gameday} (Window: {gametime} + 6 hours/ - 3 hours across all years)...")
 
         while True:
             params = {
