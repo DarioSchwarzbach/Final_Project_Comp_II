@@ -3,5 +3,4 @@ pandas
 numpy
 scipy
 plotly
-great_tables
 pydeck
