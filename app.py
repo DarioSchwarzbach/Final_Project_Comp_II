@@ -435,6 +435,6 @@ with tab2:
         fig_macro.update_layout(
             yaxis_title="Total Crimes per 9-Hour Window", showlegend=False
         )
-        st.plotly_chart(fig_macro, use_container_width=True)
+        st.plotly_chart(fig_macro, width="stretch")
     else:
         st.warning("Not enough data to run macro analysis.")
