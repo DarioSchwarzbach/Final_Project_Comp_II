@@ -6,27 +6,47 @@ import os
 import time
 from datetime import datetime, timedelta
 
+# ==========================================
+# 1. SETUP & CONSTANTS
+# ==========================================
+YEARS_TO_FETCH = list(range(2001, 2027))
+CHICAGO_API_URL = "https://data.cityofchicago.org/resource/ijzp-q8t2.json"
+DATA_DIR = "data"
 
-def fetch_data():
-    years = list(range(2001, 2027))
+CRIME_COLUMNS = [
+    'id', 'case_number', 'date', 'block', 'primary_type', 'description',
+    'location_description', 'arrest', 'domestic', 'beat', 'district',
+    'ward', 'community_area', 'latitude', 'longitude'
+]
 
-    # ---------------------------------------------------------
-    # 1. Fetch and Prepare Bears Data
-    # ---------------------------------------------------------
-    print(f"Fetching NFL schedules for years: {years}")
+
+# ==========================================
+# 2. DATA EXTRACTION FUNCTIONS
+# ==========================================
+def fetch_bears_schedule(years: list) -> pl.DataFrame:
+    """
+    Fetches historical NFL schedules and filters for Chicago Bears games.
+    Calculates whether the Bears won each game based on home/away status.
+
+    Args:
+        years (list): List of integer years to fetch data for.
+
+    Returns:
+        pl.DataFrame: A Polars DataFrame containing filtered game data.
+    """
+    print(f"Fetching NFL schedules for years: {years[0]} to {years[-1]}")
     schedules = nfl.load_schedules(years)
 
-    # Filter for Chicago Bears games (home or away)
+    # Filter for games involving the Bears
     bears_games = schedules.filter((pl.col("home_team") == "CHI") | (pl.col("away_team") == "CHI"))
 
-    # Keep relevant columns
     cols_to_keep = [
         'game_id', 'season', 'game_type', 'week', 'gameday', 'weekday', 'gametime',
         'away_team', 'away_score', 'home_team', 'home_score', "location", 'result', 'total'
     ]
-    bears_games = bears_games.select(cols_to_keep)  # .select() is safer in Polars than bracket notation
+    bears_games = bears_games.select(cols_to_keep)
 
-    # Determine games where Bears won
+    # Determine games where Bears won (1.0 = Win, 0.0 = Loss, 0.5 = Tie)
     bears_games = bears_games.with_columns(
         pl.when(pl.col("home_score").is_null() | pl.col("away_score").is_null())
         .then(None)
@@ -43,128 +63,168 @@ def fetch_data():
         )
         .alias("bears_win")
     )
+    return bears_games
 
-    os.makedirs('data_acquisition/data', exist_ok=True)
-    out_path_nfl = 'data/bears_games_2001_2025.csv'
-    bears_games.write_csv(out_path_nfl)
-    print(f"Saved Bears data to {out_path_nfl} ({len(bears_games)} games found).\n")
 
-    # ---------------------------------------------------------
-    # 2. Process non-REG games for Crime Data
-    # ---------------------------------------------------------
-    non_reg_games = bears_games.filter(pl.col("game_type") != "REG")
-    print(f"Found {len(non_reg_games)} non-regular season games. Fetching crime data...")
+def build_socrata_query(gameday: str, gametime: str, years: list) -> str:
+    """
+    Constructs a SoQL (Socrata Query Language) WHERE clause to fetch crimes
+    occurring exactly within a 9-hour window across multiple historical years.
 
-    base_url = "https://data.cityofchicago.org/resource/ijzp-q8t2.json"
+    Args:
+        gameday (str): The date of the game (YYYY-MM-DD).
+        gametime (str): The kickoff time (HH:MM or HH:MM:SS).
+        years (list): List of historical years to build the baseline against.
 
-    # Convert to Python dicts for row-by-row processing
-    games_list = non_reg_games.to_dicts()
+    Returns:
+        str: A concatenated SQL-like WHERE clause.
+    """
+    # Standardize time parsing
+    try:
+        base_dt = datetime.strptime(f"{gameday} {gametime}", "%Y-%m-%d %H:%M")
+    except ValueError:
+        base_dt = datetime.strptime(f"{gameday} {gametime}", "%Y-%m-%d %H:%M:%S")
 
-    for game in games_list:
-        gameday = game['gameday']
-        gametime = game['gametime']
+    conditions = []
 
-        # Skip if either is missing
-        if not gameday or not gametime:
-            print(f"Skipping game {game['game_id']} due to missing date or time.")
+    # Generate the 9-hour window for every year in our dataset
+    for y in years:
+        try:
+            # Reconstruct the target date for the historical year
+            target_dt = datetime(
+                year=y, month=base_dt.month, day=base_dt.day,
+                hour=base_dt.hour, minute=base_dt.minute
+            )
+        except ValueError:
+            # Automatically skips leap-year days (Feb 29) on non-leap years
             continue
 
-        # Parse the datetime. Handle both HH:MM and HH:MM:SS formats just in case.
+        # Window: 3 hours pre-game, 3 hours game time, 3 hours post-game
+        start_dt = target_dt - timedelta(hours=3)
+        end_dt = target_dt + timedelta(hours=6)
+
+        start_str = start_dt.strftime("%Y-%m-%dT%H:%M:%S")
+        end_str = end_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+        conditions.append(f"(date >= '{start_str}' AND date <= '{end_str}')")
+
+    return " OR ".join(conditions)
+
+
+def fetch_crimes_from_api(where_clause: str) -> list:
+    """
+    Paginates through the Chicago Data Portal API using an offset/limit strategy
+    to bypass strict data limits per request.
+
+    Args:
+        where_clause (str): The SoQL string specifying the time windows.
+
+    Returns:
+        list: A list of dictionaries containing raw crime records.
+    """
+    limit = 50000
+    offset = 0
+    all_data = []
+
+    #
+    while True:
+        params = {
+            "$where": where_clause,
+            "$limit": limit,
+            "$offset": offset,
+            "$order": "date DESC"
+        }
+
         try:
-            base_dt = datetime.strptime(f"{gameday} {gametime}", "%Y-%m-%d %H:%M")
-        except ValueError:
-            base_dt = datetime.strptime(f"{gameday} {gametime}", "%Y-%m-%d %H:%M:%S")
+            response = requests.get(CHICAGO_API_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
 
-        game_month = base_dt.month
-        game_day = base_dt.day
-        game_hour = base_dt.hour
-        game_minute = base_dt.minute
-
-        # Build the exact time windows across ALL years
-        conditions = []
-        for y in years:
-            try:
-                # This will raise a ValueError if it's Feb 29 on a non-leap year
-                target_dt = datetime(year=y, month=game_month, day=game_day, hour=game_hour, minute=game_minute)
-            except ValueError:
-                # Skip invalid leap year dates
-                continue
-
-            # We want a time window 3 hours before and 3 hours after a game with 3 hours avg game time.
-            start_dt = target_dt - timedelta(hours=3)
-            end_dt = target_dt + timedelta(hours=6)
-
-            # Format to Socrata API standard
-            start_str = start_dt.strftime("%Y-%m-%dT%H:%M:%S")
-            end_str = end_dt.strftime("%Y-%m-%dT%H:%M:%S")
-
-            conditions.append(f"(date >= '{start_str}' AND date <= '{end_str}')")
-
-        # Combine all yearly time windows into one big API query for this game
-        where_clause = " OR ".join(conditions)
-
-        # ---------------------------------------------------------
-        # 3. Fetch Crime Data from API
-        # ---------------------------------------------------------
-        limit = 50000
-        offset = 0
-        all_data = []
-
-        print(f"Fetching crimes for {gameday} (Window: {gametime} + 6 hours/ - 3 hours across all years)...")
-
-        while True:
-            params = {
-                "$where": where_clause,
-                "$limit": limit,
-                "$offset": offset,
-                "$order": "date DESC"
-            }
-
-            try:
-                response = requests.get(base_url, params=params)
-                response.raise_for_status()
-                data = response.json()
-
-                if not data:
-                    break
-
-                all_data.extend(data)
-
-                if len(data) < limit:
-                    break
-
-                offset += limit
-                time.sleep(1)  # Be nice to the API
-
-            except requests.exceptions.RequestException as e:
-                print(f"Error fetching crime data for {gameday}: {e}")
+            if not data:
                 break
 
-        # Save Crime Data
-        if all_data:
-            df_crimes = pd.DataFrame(all_data)
+            all_data.extend(data)
 
-            relevant_columns = [
-                'id', 'case_number', 'date', 'block', 'primary_type', 'description',
-                'location_description', 'arrest', 'domestic', 'beat', 'district',
-                'ward', 'community_area', 'latitude', 'longitude'
-            ]
-            cols_to_keep = [col for col in relevant_columns if col in df_crimes.columns]
-            df_crimes = df_crimes[cols_to_keep]
+            # If the API returned fewer records than the limit, we've hit the end
+            if len(data) < limit:
+                break
 
-            # Add the 'home_game' boolean flag
-            is_home = (game['home_team'] == 'CHI') and (game['location'] == 'Home')
-            df_crimes['home_game'] = is_home
+            offset += limit
+            time.sleep(1)  # Throttle requests to respect API rate limits
 
-            # Add the 'gameday' boolean flag (True only for the specific year/month/day of the game)
-            df_crimes['gameday'] = df_crimes['date'].astype(str).str.startswith(gameday)
+        except requests.exceptions.RequestException as e:
+            print(f"API Error: {e}")
+            break
 
-            out_path_crime = f'data/crimes_for_game_{gameday}.csv'
-            df_crimes.to_csv(out_path_crime, index=False)
-            print(f"  -> Successfully saved {len(df_crimes)} crime records to {out_path_crime}.")
-        else:
-            print(f"  -> No crime data found for {gameday} time windows.")
+    return all_data
+
+
+# ==========================================
+# 3. DATA PROCESSING & ORCHESTRATION
+# ==========================================
+def process_and_save_crimes(raw_crimes: list, game_metadata: dict, output_path: str):
+    """
+    Cleans raw API data, attaches game-specific boolean flags, and saves to CSV.
+
+    Args:
+        raw_crimes (list): Raw list of dicts from the API.
+        game_metadata (dict): Metadata about the game (teams, location, date).
+        output_path (str): Filepath to save the final CSV.
+    """
+    if not raw_crimes:
+        print(f"  -> No crime data found for {game_metadata['gameday']}.")
+        return
+
+    df_crimes = pd.DataFrame(raw_crimes)
+
+    # Filter columns safely
+    cols_to_keep = [col for col in CRIME_COLUMNS if col in df_crimes.columns]
+    df_crimes = df_crimes[cols_to_keep]
+
+    # Attach contextual boolean flags for the Streamlit app
+    is_home = (game_metadata['home_team'] == 'CHI') and (game_metadata['location'] == 'Home')
+    df_crimes['home_game'] = is_home
+
+    # Identify which crimes actually happened on the real game day versus historical baseline days
+    df_crimes['gameday'] = df_crimes['date'].astype(str).str.startswith(game_metadata['gameday'])
+
+    df_crimes.to_csv(output_path, index=False)
+    print(f"  -> Successfully saved {len(df_crimes)} crime records to {output_path}.")
+
+
+def main():
+    """Main orchestrator function for the Extract Tranform Load pipeline."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    # 1. Fetch Bears Data
+    bears_games = fetch_bears_schedule(YEARS_TO_FETCH)
+    out_path_nfl = os.path.join(DATA_DIR, 'bears_games_2001_2025.csv')
+    bears_games.write_csv(out_path_nfl)
+    print(f"Saved NFL schedule to {out_path_nfl} ({len(bears_games)} games found).\n")
+
+    # 2. Filter target games (e.g., non-regular season for your current logic)
+    target_games = bears_games.filter(pl.col("game_type") != "REG")
+    print(f"Found {len(target_games)} target games. Fetching crime data...")
+
+    # 3. Iterate through games and fetch crime baselines
+    games_list = target_games.to_dicts()
+
+    for game in games_list:
+        gameday, gametime = game['gameday'], game['gametime']
+
+        if not gameday or not gametime:
+            print(f"Skipping game {game['game_id']} due to missing datetime.")
+            continue
+
+        print(f"Fetching crimes for {gameday} (Window: {gametime} +/- hours across all years)...")
+
+        # Build Query -> Fetch -> Clean -> Save
+        where_clause = build_socrata_query(gameday, gametime, YEARS_TO_FETCH)
+        raw_crime_data = fetch_crimes_from_api(where_clause)
+
+        out_path_crime = os.path.join(DATA_DIR, f'crimes_for_game_{gameday}.csv')
+        process_and_save_crimes(raw_crime_data, game, out_path_crime)
 
 
 if __name__ == "__main__":
-    fetch_data()
+    main()
