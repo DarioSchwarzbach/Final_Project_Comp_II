@@ -3,7 +3,8 @@ name: Fetch NFL and Crime Data
 on:
   push:
   schedule:
-    - cron: '0 * * * *'
+    # Runs at 03:00 UTC every Tuesday (Day 2 of the week)
+    - cron: '0 3 * * 2'
   workflow_dispatch:
     inputs:
       run_fetch_data:
