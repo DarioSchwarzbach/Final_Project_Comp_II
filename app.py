@@ -261,6 +261,6 @@ with tab2:
             go.Box(y=macro_results["raw_baseline_data"], name="Historical Baselines", marker_color="yellow"))
         fig_macro.add_trace(go.Box(y=macro_results["raw_game_data"], name="Actual Game Days", marker_color="red"))
         fig_macro.update_layout(yaxis_title="Total Crimes per 9-Hour Window", showlegend=False)
-        st.plotly_chart(fig_macro, use_container_width=True)
+        st.plotly_chart(fig_macro, width="stretch")
     else:
         st.warning("Not enough data to run macro analysis.")
