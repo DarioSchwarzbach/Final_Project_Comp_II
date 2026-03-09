@@ -21,13 +21,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install polars nflreadpy
+          pip install nflreadpy polars pandas requests
 
       - name: Run script
-        run: python data_acquisition/fetch_nfl.py
+        run: python fetch_data.py
 
-      - name: Upload CSV Artifact
+      - name: Upload CSV Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bears_games_csv
-          path: data/bears_games_2001*.csv
+          name: bears_and_crimes_csv
+          path: data/*.csv
