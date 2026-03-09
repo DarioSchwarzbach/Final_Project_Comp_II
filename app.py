@@ -160,7 +160,7 @@ def create_heatmap(df_g, df_h, show_h):
         layers.append(pdk.Layer(
             "HeatmapLayer", data=df_h_clean,
             get_position=["longitude", "latitude"],
-            get_weight=1, radiusPixels=50, opacity=0.3,
+            get_weight=1, radiusPixels=10, opacity=0.3,
             colorRange=[[237, 248, 251], [191, 211, 230], [158, 188, 218], [140, 150, 198], [136, 86, 167]]
         ))
 
@@ -168,7 +168,7 @@ def create_heatmap(df_g, df_h, show_h):
     layers.append(pdk.Layer(
         "HeatmapLayer", data=df_g_clean,
         get_position=["longitude", "latitude"],
-        get_weight=1, radiusPixels=50, opacity=0.8,
+        get_weight=1, radiusPixels=10, opacity=0.8,
     ))
 
     stadium_data = [{"lat": SOLDIER_FIELD_LAT, "lon": SOLDIER_FIELD_LON}]
