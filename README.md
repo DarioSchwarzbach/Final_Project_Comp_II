@@ -41,6 +41,7 @@ The data pipeline for this project relied on integrating two disparate data sour
 - **Cons**: Combining the two libraries required careful memory management and explicit conversions between the two DataFrame formats during the data pipeline.
 
 ## Key Findings, Results, and Recommendations:
+<img src="results.png" width="1000" alt="Results">
 
 The analytical dashboard relies on rigorous statistical tests to draw conclusions from the localized and macro-level data. The mathematical outputs are intended to guide the following findings and recommendations:
 
