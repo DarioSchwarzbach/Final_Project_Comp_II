@@ -5,8 +5,6 @@
 
 This project provides a comprehensive analysis and interactive dashboard to explore the impact of the Chicago Bears on crime rates in Chicago. The application uses a Python model to compare crime volumes on game days against historical baselines, visualizing data through density heatmaps, line charts, and statistical paired t-tests (macro trends). Initially, the team sought to discover a correlation between the Bears' overall season success and Chicago's violent crime rates. After finding this macro-leve success rate to be statistically insignificant, the team pivoted to a micro-level temporal analysis, focusing specifically on the game days and game play hours to uncover localized insights.
 
-In the beginning, the team set out to discover if there was a correlation between the overall success rate of the Chicago Bears and the numbers of violent crimes committed in the Chicago area. As the project went on the team noticed that the overall success rate of the Chicago Bears was not a statistically significant indicator of the crime rate in Chicago. As a result, the team pivoted to emphasizing the game days and specifically the hours of game play to see if that would give us more insight into the crime rate. 
-
 ## Motivation for the Research Problem:
 
 Two critical questions that may be asked by municipal leaders and law enforcement are whether high visibility events, such as Chicago Bears home and away games, have a statistically significant impact on crime rates and more broadly speaking, whether the overall performance in an NFL season significantly impacts crime rates. By analyzing crime volumes during game windows against historical baselines, this tool aims to provide actionable intelligence for resource allocation, public safety planning, and understanding the broader sociological impact of NFL games on the city of Chicago.
@@ -46,23 +44,32 @@ The analytical dashboard relies on rigorous statistical tests to draw conclusion
 - **polars**: A blazingly fast DataFrames library used here alongside pandas for data manipulation.
 - **nflreadpy**: A Python library to access NFL schedule and game data.
 
-Create a virtual environment and install dependencies needed for this Dashboard with pip:
+## Steps to run the application:
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-## Steps to run Streamlit Dashboard:
-
-1. Open Command Prompt or Terminal.
-2. Navigate to the project directory where `app.py` is saved.
-3. Ensure you have the datasets downloaded by running the fetch script:
+1. Clone the app repository:
+    ```bash
+    git clone https://github.com/DarioSchwarzbach/Final_Project_Comp_II.git
+    ```
+2. Open Anaconda Command Prompt or Terminal.
+3. Navigate to the project root directory where `app.py` is saved.
+4. Create a new `conda` environment or activate an existing one, e.g.:
+    * Create:
+    ```bash
+    conda create -n new_name python=3.13 pip
+    ```
+    * Activate (at least **Python 3.12** recommended and `pip` installed): 
+    ```bash
+    conda activate old_name
+    ```
+5. Install all required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+6. Ensure you have the datasets downloaded by running the fetch script:
    ```bash
    python fetch_data.py
    ```
-4. Run the following command to start the dashboard:
+7. Run the following command to start the dashboard:
    ```bash
    python -m streamlit run app.py
    ```
