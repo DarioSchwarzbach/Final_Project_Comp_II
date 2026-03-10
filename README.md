@@ -3,11 +3,13 @@
 
 ## Project Overview:
 
-This project provides a comprehensive analysis and interactive dashboard to explore the impact of Chicago Bears on crime rates in Chicago. The application uses a Python model to compare crime volumes on game days against historical baselines, visualizing data through density heatmaps, line charts, and statistical paired t-tests (macro trends). In the beginning, the team set out to discover if there was a correlation between the overall success rate of the Chicago Bears and the numbers of violent crimes commited in the Chicago area. As the project went on the team noticed that the overall success rate of the Chicago Bears was not a statistically significant indicator of the crime rate in Chicago. As a result, the team pivoted to emphasizing the game days and specifically the hours of game play to see if that would give us more insight into the crime rate. 
+This project provides a comprehensive analysis and interactive dashboard to explore the impact of the Chicago Bears on crime rates in Chicago. The application uses a Python model to compare crime volumes on game days against historical baselines, visualizing data through density heatmaps, line charts, and statistical paired t-tests (macro trends). Initially, the team sought to discover a correlation between the Bears' overall season success and Chicago's violent crime rates. After finding this macro-leve success rate to be statistically insignificant, the team pivoted to a micro-level temporal analysis, focusing specifically on the game days and game play hours to uncover localized insights.
+
+In the beginning, the team set out to discover if there was a correlation between the overall success rate of the Chicago Bears and the numbers of violent crimes committed in the Chicago area. As the project went on the team noticed that the overall success rate of the Chicago Bears was not a statistically significant indicator of the crime rate in Chicago. As a result, the team pivoted to emphasizing the game days and specifically the hours of game play to see if that would give us more insight into the crime rate. 
 
 ## Motivation for the Research Problem:
 
-Two critical questions that may be asked by municipal leaders and law enforcement is whether high visibility events, such as Chicago Bears home and away games, have a statistically significant impact on crime rates and more broadly speaking, whether the overall performance in an NFL season significantly impacts crime rates. By analyzing crime volumes during game windows against historical baselines, this tool aims to provide actionable intelligence for resource allocation, public safety planning, and understanding the broader sociological impact of NFL games on the city of Chicago.
+Two critical questions that may be asked by municipal leaders and law enforcement are whether high visibility events, such as Chicago Bears home and away games, have a statistically significant impact on crime rates and more broadly speaking, whether the overall performance in an NFL season significantly impacts crime rates. By analyzing crime volumes during game windows against historical baselines, this tool aims to provide actionable intelligence for resource allocation, public safety planning, and understanding the broader sociological impact of NFL games on the city of Chicago.
 
 ## Summary of the Overall Approach:
 
@@ -24,36 +26,35 @@ The analytical dashboard relies on rigorous statistical tests to draw conclusion
 - **Z-Scores & P-Values (Single Game)**: By measuring the number of standard deviations (z-score) a game day's crime volume (Sunday with a game) is from the historical mean (Sunday baseline), the model calculates a p-value. A p-value < 0.05 indicates a statistically significant anomaly (either an increase or decrease in crime).
 - **Paired T-Test (Macro Trends)**: By evaluating the mean difference between game day crimes and baseline crimes across the entire dataset, the tool identifies definitive, overarching statistical trends.
 - **Recommendations for Stakeholders**:
-  - *If a significant increase is detected*: Law enforcement and city planners should consider dynamic resource allocation, increasing police presence, or optimizing traffic routes around the stadium and high-crime density zones identified in the spatial heatmap.
-  - *If a significant decrease or no change is detected*: Resources can be maintained at standard operational levels, avoiding unnecessary overtime expenditures for public safety officers. City officials can also use this data to alleviate public concerns regarding crime spikes during major sporting events.
+  - Overall, as we looked at various days across multiple years there was no statistical significance indicated by the Bears' performance nor was there enough evidence to confidently state that during the hours of the football game crime rates were in decline. Because of this result, the team would recommend that the city leaders do not allocate additional resources during the times of the games beyond what they currently do as there is no guarantee that this will lead to consistently less crime.
 
 ## File Summary:
 
 - **`app.py`**: The main Streamlit dashboard application for exploring game day crime analytics, including the three main analytical methods (General Correlation, Single Game Analysis, and Macro Trends).
 - **`fetch_data.py`**: Python script used to fetch NFL schedules using `nflreadpy` and query the City of Chicago Data API for crime statistics correlated with game windows. Saves outputs to the `data/` directory.
-- **`app_years.py`**: An alternate version of the Streamlit application for analyzing crime trends across different years.
 - **`requirements.txt`**: Contains all the required Python packages to run the data fetching script and Streamlit dashboard.
 - **`.github/workflows/fetch_data.yml`**: GitHub Actions workflow to automate the fetching of new NFL and crime data.
 
 ## Python Packages:
 
 - **streamlit**: An open-source app framework for Machine Learning and Data Science teams.
-- **pandas**: A powerful data analysis and manipulation library.
-- **numpy**: A fundamental package for scientific computing with Python.
-- **scipy**: Used for statistical functions, specifically calculating z-scores, p-values, and t-tests.
-- **plotly**: A graphing library for making interactive, publication-quality graphs (used here for line charts, box plots, and dual-axis correlation charts).
+- **pandas**: Used for core data manipulation and cleaning.
+- **scipy.stats**: Used for statistical functions, specifically calculating z-scores, p-values, and t-tests.
+- **plotly.graph_objects**: A graphing library for making interactive, publication-quality graphs (used here for line charts, box plots, and dual-axis correlation charts).
 - **pydeck**: A WebGL-powered framework for visual exploratory data analysis of large datasets (used for the spatial crime density heatmaps).
 - **requests**: An HTTP library for making API calls to the City of Chicago data portal.
 - **polars**: A blazingly fast DataFrames library used here alongside pandas for data manipulation.
 - **nflreadpy**: A Python library to access NFL schedule and game data.
 
-You can install all these packages using pip:
+Create a virtual environment and install dependencies needed for this Dashboard with pip:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Steps to run streamlit Dashboard:
+## Steps to run Streamlit Dashboard:
 
 1. Open Command Prompt or Terminal.
 2. Navigate to the project directory where `app.py` is saved.
