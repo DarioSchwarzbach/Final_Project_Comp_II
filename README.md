@@ -3,7 +3,7 @@
 
 ## Project Overview:
 
-This project provides a comprehensive analysis and interactive dashboard to explore the impact of Chicago Bears on crime rates in Chicago. The application uses a Python model to compare crime volumes on game days against historical baselines, visualizing data through density heatmaps, line charts, and statistical paired t-tests (macro trends). In the beginning, we set out to discover if there was a correlation between the overall success rate of the Chicago Bears and the numbers of violent crimes commited in the Chicago area.
+This project provides a comprehensive analysis and interactive dashboard to explore the impact of Chicago Bears on crime rates in Chicago. The application uses a Python model to compare crime volumes on game days against historical baselines, visualizing data through density heatmaps, line charts, and statistical paired t-tests (macro trends). In the beginning, the team set out to discover if there was a correlation between the overall success rate of the Chicago Bears and the numbers of violent crimes commited in the Chicago area. As the project went on the team noticed that the overall success rate of the Chicago Bears was not a statistically significant indicator of the crime rate in Chicago. As a result, the team pivoted to emphasizing the game days and specifically the hours of game play to see if that would give us more insight into the crime rate. 
 
 ## Motivation for the Research Problem:
 
@@ -35,14 +35,6 @@ The analytical dashboard relies on rigorous statistical tests to draw conclusion
 - **`requirements.txt`**: Contains all the required Python packages to run the data fetching script and Streamlit dashboard.
 - **`.github/workflows/fetch_data.yml`**: GitHub Actions workflow to automate the fetching of new NFL and crime data.
 
-## Dashboard Python Prerequisites:
-
-Before running the dashboard ensure you have Streamlit installed. You can install it using pip:
-
-```bash
-pip install streamlit
-```
-
 ## Python Packages:
 
 - **streamlit**: An open-source app framework for Machine Learning and Data Science teams.
@@ -54,7 +46,6 @@ pip install streamlit
 - **requests**: An HTTP library for making API calls to the City of Chicago data portal.
 - **polars**: A blazingly fast DataFrames library used here alongside pandas for data manipulation.
 - **nflreadpy**: A Python library to access NFL schedule and game data.
-- **great_tables**: A package for building wonderful display tables in Python.
 
 You can install all these packages using pip:
 
