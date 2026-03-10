@@ -124,10 +124,16 @@ def calculate_macro_trends():
 
     Returns:
         dict: A dictionary containing sample size, averages, statistical test results,
-              and the raw array data needed to draw the box plot. Returns None if data is missing.
+              raw array data needed to draw the box plot, and the macro residential proportions.
+              Returns None if data is missing.
     """
     files = glob.glob("data/crimes_for_game_*.csv")
     game_day_totals, baseline_averages = [], []
+
+    # Variables to track macro residential stats
+    macro_total_crimes = 0
+    macro_res_crimes = 0
+    residential_types = ["APARTMENT", "RESIDENCE", "RETIREMENT HOME"]
 
     for file in files:
         df_macro = pd.read_csv(file)
@@ -156,11 +162,20 @@ def calculate_macro_trends():
             game_day_totals.append(game_total)
             baseline_averages.append(historical_totals.mean())
 
+        # Filter the dataframe for just the actual game day to calculate residential stats
+        df_game_day = df_macro[df_macro["year"] == game_year]
+        if not df_game_day.empty and "location_description" in df_game_day.columns:
+            macro_total_crimes += len(df_game_day)
+            macro_res_crimes += len(df_game_day[df_game_day["location_description"].isin(residential_types)])
+
     if not game_day_totals:
         return None
 
     # Run a paired t-test to compare game days against their own specific baselines
     t_stat, p_value = stats.ttest_rel(game_day_totals, baseline_averages)
+
+    # Calculate macro residential proportion
+    macro_res_prop = (macro_res_crimes / macro_total_crimes * 100) if macro_total_crimes > 0 else 0.0
 
     return {
         "n_games": len(game_day_totals),
@@ -170,6 +185,9 @@ def calculate_macro_trends():
         "p_value": p_value,
         "raw_game_data": game_day_totals,
         "raw_baseline_data": baseline_averages,
+        "macro_res_crimes": macro_res_crimes,  # Added to dictionary
+        "macro_total_crimes": macro_total_crimes,  # Added to dictionary
+        "macro_res_prop": macro_res_prop  # Added to dictionary
     }
 
 
@@ -246,6 +264,7 @@ def create_heatmap(df_g, df_h, show_h):
 
     # Optional Layer: Historical Data (dimmer, bluish tint)
     if show_h:
+        # Convert to pure Python dictionaries to bypass NumPy/Pandas JSON errors
         df_h_clean = df_h[['latitude', 'longitude']].dropna().to_dict(orient='records')
         layers.append(pdk.Layer(
             "HeatmapLayer", data=df_h_clean,
@@ -254,7 +273,8 @@ def create_heatmap(df_g, df_h, show_h):
             colorRange=[[237, 248, 251], [191, 211, 230], [158, 188, 218], [140, 150, 198], [136, 86, 167]]
         ))
 
-    # Primary Layer: Game Day Data (bright, highly opaque)
+    # Primary Game Day Layer
+    # Convert to pure Python dictionaries
     df_g_clean = df_g[['latitude', 'longitude']].dropna().to_dict(orient='records')
     layers.append(pdk.Layer(
         "HeatmapLayer", data=df_g_clean,
@@ -262,7 +282,8 @@ def create_heatmap(df_g, df_h, show_h):
         get_weight=1, radiusPixels=10, opacity=0.8,
     ))
 
-    # Marker Layer: Soldier Field Coordinates
+    # Soldier Field Marker
+    # Use a raw Python list of dicts instead of pd.DataFrame
     stadium_data = [{"lat": SOLDIER_FIELD_LAT, "lon": SOLDIER_FIELD_LON}]
     layers.append(
         pdk.Layer(
@@ -283,12 +304,34 @@ def create_heatmap(df_g, df_h, show_h):
 
 
 def get_residential_proportion(df_g):
-    """Calculates the proportion of game day crimes that are residential."""
+    """
+    Calculates the count and percentage of crimes that occurred in residential locations.
+
+    Filters the dataset for specific location descriptions (e.g., apartments,
+    residences, retirement homes) and computes their proportion relative to
+    the total number of crimes in the provided dataset. Includes a safety
+    check to handle missing location columns from the API.
+
+    Args:
+        df_g (pd.DataFrame): The filtered dataset (usually for a specific game day)
+                             containing a 'location_description' column.
+
+    Returns:
+        tuple: A tuple containing:
+            - game_res_crimes (int): Total number of residential crimes.
+            - game_total_crimes (int): Total number of crimes overall.
+            - proportion (float): The percentage of residential crimes (0.0 to 100.0).
+    """
     residential_types = ["APARTMENT", "RESIDENCE", "RETIREMENT HOME"]
 
     game_total_crimes = len(df_g)
-    game_residential = df_g[df_g["location_description"].isin(residential_types)]
-    game_res_crimes = len(game_residential)
+
+    # Added a safety check in case the API misses the location column
+    if "location_description" in df_g.columns:
+        game_residential = df_g[df_g["location_description"].isin(residential_types)]
+        game_res_crimes = len(game_residential)
+    else:
+        game_res_crimes = 0
 
     if game_total_crimes > 0:
         proportion = (game_res_crimes / game_total_crimes) * 100
@@ -387,8 +430,8 @@ with tab2:
         macro_results = calculate_macro_trends()
 
     if macro_results:
-        # High-level KPIs
-        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+
         col_m1.metric("Games Analyzed", macro_results["n_games"])
         col_m2.metric("Avg Crimes (Game Day)", f"{macro_results['avg_game']:.2f}")
         col_m3.metric(
@@ -396,6 +439,14 @@ with tab2:
             f"{macro_results['avg_baseline']:.2f}",
             delta=f"{macro_results['avg_game'] - macro_results['avg_baseline']:.2f} crimes",
             delta_color="inverse",
+        )
+
+        # Metric card for Macro Residential Proportion
+        col_m4.metric(
+            "Residential Crimes (All Games)",
+            f"{macro_results['macro_res_crimes']} / {macro_results['macro_total_crimes']}",
+            delta=f"{macro_results['macro_res_prop']:.1f}% of total",
+            delta_color="off",
         )
 
         # Evaluate the p-value across the entire dataset
@@ -421,14 +472,14 @@ with tab2:
         fig_macro.add_trace(
             go.Box(
                 y=macro_results["raw_baseline_data"],
-                name="Historical Baselines",
+                name="Historical",
                 marker_color="yellow",
             )
         )
         fig_macro.add_trace(
             go.Box(
                 y=macro_results["raw_game_data"],
-                name="Actual Game Days",
+                name="Game Days",
                 marker_color="red",
             )
         )
