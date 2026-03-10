@@ -177,4 +177,3 @@ marimo/_lsp/
 __marimo__/
 # Streamlit
 .streamlit/secrets.toml
-debug_pfr.html
