@@ -130,9 +130,14 @@ def calculate_macro_trends():
     files = glob.glob("data/crimes_for_game_*.csv")
     game_day_totals, baseline_averages = [], []
 
-    # Variables to track macro residential stats
+    # Variables to track macro residential stats for game days
     macro_total_crimes = 0
     macro_res_crimes = 0
+
+    # Variables to track macro residential stats for baselines
+    macro_base_total_crimes = 0
+    macro_base_res_crimes = 0
+
     residential_types = ["APARTMENT", "RESIDENCE", "RETIREMENT HOME"]
 
     for file in files:
@@ -168,14 +173,24 @@ def calculate_macro_trends():
             macro_total_crimes += len(df_game_day)
             macro_res_crimes += len(df_game_day[df_game_day["location_description"].isin(residential_types)])
 
+        # Filter the dataframe for the historical baselines to calculate residential stats
+        df_baseline = df_macro[df_macro["year"] != game_year]
+        if not df_baseline.empty and "location_description" in df_baseline.columns:
+            macro_base_total_crimes += len(df_baseline)
+            macro_base_res_crimes += len(df_baseline[df_baseline["location_description"].isin(residential_types)])
+
     if not game_day_totals:
         return None
 
     # Run a paired t-test to compare game days against their own specific baselines
     t_stat, p_value = stats.ttest_rel(game_day_totals, baseline_averages)
 
-    # Calculate macro residential proportion
+    # Calculate macro residential proportion for Game Days
     macro_res_prop = (macro_res_crimes / macro_total_crimes * 100) if macro_total_crimes > 0 else 0.0
+
+    # Calculate macro residential proportion for Baselines
+    macro_base_res_prop = (
+                macro_base_res_crimes / macro_base_total_crimes * 100) if macro_base_total_crimes > 0 else 0.0
 
     return {
         "n_games": len(game_day_totals),
@@ -185,9 +200,12 @@ def calculate_macro_trends():
         "p_value": p_value,
         "raw_game_data": game_day_totals,
         "raw_baseline_data": baseline_averages,
-        "macro_res_crimes": macro_res_crimes,  # Added to dictionary
-        "macro_total_crimes": macro_total_crimes,  # Added to dictionary
-        "macro_res_prop": macro_res_prop  # Added to dictionary
+        "macro_res_crimes": macro_res_crimes,
+        "macro_total_crimes": macro_total_crimes,
+        "macro_res_prop": macro_res_prop,
+        "macro_base_res_crimes": macro_base_res_crimes,  # Added to dictionary
+        "macro_base_total_crimes": macro_base_total_crimes,  # Added to dictionary
+        "macro_base_res_prop": macro_base_res_prop  # Added to dictionary
     }
 
 
@@ -430,7 +448,7 @@ with tab2:
         macro_results = calculate_macro_trends()
 
     if macro_results:
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
 
         col_m1.metric("Games Analyzed", macro_results["n_games"])
         col_m2.metric("Avg Crimes (Game Day)", f"{macro_results['avg_game']:.2f}")
@@ -441,11 +459,19 @@ with tab2:
             delta_color="inverse",
         )
 
-        # Metric card for Macro Residential Proportion
+        # Metric card for Macro Residential Proportion (Game Days)
         col_m4.metric(
-            "Residential Crimes (All Games)",
+            "Res. Crimes (Game Days)",
             f"{macro_results['macro_res_crimes']} / {macro_results['macro_total_crimes']}",
             delta=f"{macro_results['macro_res_prop']:.1f}% of total",
+            delta_color="off",
+        )
+
+        # Metric card for Macro Residential Proportion (Baselines)
+        col_m5.metric(
+            "Res. Crimes (Baselines)",
+            f"{macro_results['macro_base_res_crimes']} / {macro_results['macro_base_total_crimes']}",
+            delta=f"{macro_results['macro_base_res_prop']:.1f}% of total",
             delta_color="off",
         )
 
