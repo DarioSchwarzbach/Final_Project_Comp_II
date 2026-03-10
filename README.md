@@ -1,4 +1,5 @@
 # Chicago Bears Game Day Crime Explorer
+
 [![Fetch NFL and Crime Data](https://github.com/DarioSchwarzbach/Final_Project_Comp_II/actions/workflows/fetch_data.yml/badge.svg?branch=dev)](https://github.com/DarioSchwarzbach/Final_Project_Comp_II/actions/workflows/fetch_data.yml)
 
 ## Project Overview:
@@ -16,6 +17,28 @@ The project adopts a data-driven approach leveraging three distinct methods of a
 1. **General Correlation (Seasonal Trends)**: Analyzing long-term trends by plotting the Bears' year-over-year win/loss record against the total volume of violent crimes in Chicago. This macro view attempts to identify if broader team success (or failure) correlates with the city's overall violent crime rate across an entire season.
 2. **Game Day vs. Baseline (Temporal Analysis)**: Utilizing a specialized data pipeline (`fetch_data.py`), the project extracts a specific 9-hour temporal window (3 hours before kickoff to 6 hours after) for each game day. This is compared against the exact same 9-hour window on historical Sundays where no game was played, establishing a control baseline. A paired t-test determines if the variance in crime is statistically significant.
 3. **Spatial Crime Location (Density Mapping)**: Highlighting the localized spatial impact of crime. Using PyDeck heatmaps, the dashboard maps the exact locations of crimes occurring during the game window, focusing particularly on the density of incidents in proximity to Soldier Field and surrounding neighborhoods.
+
+## Data Acquisition Methods & Implementation:
+
+The data pipeline for this project relied on integrating two disparate data sources. To maximize efficiency and reproducibility, specific Python packages and APIs were selected:
+
+### 1. NFL Game Data (`nflreadpy`)
+
+- **How we used it**: We utilized `nflreadpy` to programmatically pull complete NFL schedules dating back to 1990, allowing us to filter specifically for Chicago Bears game days, times, and opponent details.
+- **Pros**: Outstanding documentation, zero API keys required, and it returns data natively in pandas or polars DataFrames, making upstream integration seamless.
+- **Cons**: The package is highly reliant on external maintained repositories which can occasionally experience downtime or structural changes that break scripts.
+
+### 2. Chicago Crime Data (City of Chicago Data Portal API & `requests`)
+
+- **How we used it**: We formulated complex Socrata Query Language (SoQL) `$where` clauses and issued HTTP GET requests via the `requests` library to the City of Chicago's Open Data API. We dynamically built time windows (3 hours before and 6 hours after a game) to isolate only relevant crimes across all historical years.
+- **Pros**: Live, authoritative data from the city with robust filtering capabilities built directly into the API endpoint via SoQL. This allowed us to filter out millions of irrelevant crime records server-side before downloading.
+- **Cons**: Severe rate limiting and pagination constraints. We had to implement `time.sleep()` delays and iterate through data chunks in 50,000-row limits using `$offset`, making the full data fetch relatively slow.
+
+### 3. Data Processing (`polars` & `pandas`)
+
+- **How we used them**: `polars` was primarily used in the initial data extraction and filtering phase (specifically for processing large NFL schedule tables) due to its speed. `pandas` was used for restructuring API JSON responses, cleaning timestamps, complex groupby aggregations, and data preparation for the frontend visualizations.
+- **Pros**: `polars` offers blazingly fast parallel execution for initial filtering. `pandas` offers extreme flexibility and is the universally accepted standard for plotting libraries like Plotly and PyDeck.
+- **Cons**: Combining the two libraries required careful memory management and explicit conversions between the two DataFrame formats during the data pipeline.
 
 ## Key Findings, Results, and Recommendations:
 
@@ -47,29 +70,36 @@ The analytical dashboard relies on rigorous statistical tests to draw conclusion
 ## Steps to run the application:
 
 1. Clone the app repository:
-    ```bash
-    git clone https://github.com/DarioSchwarzbach/Final_Project_Comp_II.git
-    ```
+
+   ```bash
+   git clone https://github.com/DarioSchwarzbach/Final_Project_Comp_II.git
+   ```
 2. Open Anaconda Command Prompt or Terminal.
 3. Navigate to the project root directory where `app.py` is saved.
 4. Create a new `conda` environment or activate an existing one, e.g.:
-    * Create:
-    ```bash
-    conda create -n new_name python=3.13 pip
-    ```
-    * Activate (at least **Python 3.12** recommended and `pip` installed): 
-    ```bash
-    conda activate old_name
-    ```
+
+   * Create:
+
+   ```bash
+   conda create -n new_name python=3.13 pip
+   ```
+   * Activate (at least **Python 3.12** recommended and `pip` installed):
+
+   ```bash
+   conda activate old_name
+   ```
 5. Install all required dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
+
+   ```bash
+   pip install -r requirements.txt
+   ```
 6. Ensure you have the datasets downloaded by running the fetch script:
+
    ```bash
    python fetch_data.py
    ```
 7. Run the following command to start the dashboard:
+
    ```bash
    python -m streamlit run app.py
    ```
